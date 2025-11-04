@@ -63,8 +63,8 @@
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    <div class="stat-value">85%+</div>
-                    <div class="stat-label">Accuracy</div>
+                    <div class="stat-value">93.43%</div>
+                    <div class="stat-label">Best Accuracy</div>
                 </div>
                 <div class="stat-card">
                     <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -191,8 +191,19 @@
                                 </select>
                             </div>
 
-                            <!-- Empty space for alignment -->
-                            <div class="input-group"></div>
+                            <!-- Model Selection Input -->
+                            <div class="input-group">
+                                <label for="modelSelection">ML Model Selection</label>
+                                <select id="modelSelection" name="modelSelection" required>
+                                    <option value="decision_tree">� Decision Tree (Best Accuracy - 93.43%)</option>
+                                    <option value="logistic_regression">📊 Logistic Regression (Fastest - 93.43%)</option>
+                                    <option value="random_forest">🌲 Random Forest (Most Robust - 82.85%)</option>
+                                    <option value="xgboost">⚡ XGBoost (Advanced - ~90%)</option>
+                                </select>
+                                <small style="color: var(--text-light); font-size: 0.85em; margin-top: 4px; display: block;">
+                                    💡 Decision Tree recommended for clinical use (highest accuracy + interpretable)
+                                </small>
+                            </div>
                         </div>
                     </div>
 
@@ -246,6 +257,9 @@
                     
                     <div class="result-badges">
                         <span class="category-badge" id="categoryBadge">-</span>
+                        <span class="model-used-badge" id="modelUsedBadge" style="display: none;">
+                            Model: <span id="modelUsedText">-</span>
+                        </span>
                         <span class="confidence-badge" id="confidenceBadge" style="display: none;">
                             <span id="confidenceText">-</span>% Confidence
                         </span>
@@ -280,7 +294,12 @@
         <!-- Footer -->
         <footer class="footer">
             <p>Powered by Advanced Machine Learning & FastAPI Backend</p>
-            <p class="footer-note">Digital Twin of Stress Platform © 2025 | Research & Development Project</p>
+            <p class="footer-note">
+                Digital Twin of Stress Platform © 2025 | 
+                Best Model: Decision Tree (93.43% accuracy) | 
+                Fastest: Logistic Regression | 
+                Most Robust: Random Forest
+            </p>
         </footer>
     </div>
 

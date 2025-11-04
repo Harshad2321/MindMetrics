@@ -5,12 +5,16 @@ This will create proper scaling parameters for the model
 import pandas as pd
 import numpy as np
 import json
+from pathlib import Path
+
+# Get the project root directory (parent of backend folder)
+PROJECT_ROOT = Path(__file__).parent.parent
 
 # Load the cleaned (scaled) data
-df_scaled = pd.read_csv('cleaned_stress_data.csv')
+df_scaled = pd.read_csv(PROJECT_ROOT / 'cleaned_stress_data.csv')
 
 # Load the original raw data
-df_raw = pd.read_csv('DPDEL-FORM (Responses) - Form responses 1.csv')
+df_raw = pd.read_csv(PROJECT_ROOT / 'DPDEL-FORM (Responses) - Form responses 1.csv')
 
 print("=" * 60)
 print("ANALYZING TRAINING DATA FOR PROPER SCALING")

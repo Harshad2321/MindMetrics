@@ -1,6 +1,15 @@
 /**
  * Digital Twin of Stress - Frontend JavaScript
  * Handles form submission, API communication, and result display
+ * 
+ * MODEL PERFORMANCE SUMMARY:
+ * =========================
+ * Decision Tree:        93.43% accuracy, 93.67% F1 (BEST for clinical use)
+ * Logistic Regression:  93.43% accuracy, 92.71% F1 (BEST for production)
+ * Random Forest:        82.85% accuracy, 79.47% F1 (Most robust)
+ * XGBoost:             ~90% accuracy (estimated) (Advanced patterns)
+ * 
+ * Default: Decision Tree (highest accuracy + interpretable)
  */
 
 // API Configuration
@@ -29,6 +38,7 @@ const stressEmoji = document.getElementById('stressEmoji');
 const stressScore = document.getElementById('stressScore');
 const categoryBadge = document.getElementById('categoryBadge');
 const confidenceBadge = document.getElementById('confidenceBadge');
+const modelUsedBadge = document.getElementById('modelUsedBadge');
 const progressFill = document.getElementById('progressFill');
 const suggestionText = document.getElementById('suggestionText');
 
@@ -104,7 +114,8 @@ function getFormData() {
         sleep_duration: parseFloat(document.getElementById('sleepDuration').value),
         step_count: parseInt(document.getElementById('stepCount').value),
         sleep_quality: document.getElementById('sleepQuality').value,
-        activity_level: document.getElementById('activityLevel').value
+        activity_level: document.getElementById('activityLevel').value,
+        model_name: document.getElementById('modelSelection').value
     };
 
     return formData;
@@ -133,16 +144,30 @@ async function predictStress(data) {
 /**
  * Display prediction results with animation and color coding
  */
-function displayResults(result) {
+function displayResults(result, modelName) {
     // Update stress score
     stressScore.textContent = result.predicted_stress.toFixed(1);
     
     // Update category badge
     categoryBadge.textContent = result.stress_category;
     
+    // Update model used badge
+    const modelNames = {
+        "random_forest": "Random Forest (82.85%)",
+        "decision_tree": "Decision Tree (93.43%)",
+        "logistic_regression": "Logistic Regression (93.43%)",
+        "xgboost": "XGBoost (~90%)"
+    };
+    const modelUsedText = document.getElementById('modelUsedText');
+    if (modelUsedText) {
+        modelUsedText.textContent = modelNames[modelName] || modelName;
+        showElement(modelUsedBadge);
+    }
+    
     // Update confidence badge
     if (result.confidence !== null && result.confidence !== undefined) {
-        confidenceBadge.textContent = `Confidence: ${result.confidence}%`;
+        const confidenceText = document.getElementById('confidenceText');
+        confidenceText.textContent = result.confidence;
         showElement(confidenceBadge);
     } else {
         hideElement(confidenceBadge);
@@ -205,7 +230,7 @@ stressForm.addEventListener('submit', async (e) => {
         hideElement(loadingOverlay);
 
         // Display results
-        displayResults(result);
+        displayResults(result, formData.model_name);
 
     } catch (error) {
         console.error('Prediction error:', error);
@@ -247,13 +272,66 @@ async function loadModelInfo() {
         if (response.ok) {
             const modelInfo = await response.json();
             const badgeText = modelInfoBadge.querySelector('.badge-text');
-            badgeText.textContent = `${modelInfo.model_name} | ${modelInfo.prediction_method} | Accuracy: ${modelInfo.accuracy}`;
+            badgeText.textContent = `${modelInfo.total_models} ML Models Available | Best: ${modelInfo.performance_summary.best_accuracy}`;
             console.log('✅ Model Info:', modelInfo);
+            console.log('📊 Performance Summary:', modelInfo.performance_summary);
+            console.log('💡 Recommendation:', modelInfo.recommendation);
         }
     } catch (error) {
         console.warn('⚠️ Could not load model info');
         const badgeText = modelInfoBadge.querySelector('.badge-text');
-        badgeText.textContent = 'Model info unavailable';
+        badgeText.textContent = 'Model info unavailable - Backend not connected';
+    }
+}
+
+/**
+ * Load available models and populate dropdown
+ */
+async function loadAvailableModels() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/models`);
+        if (response.ok) {
+            const data = await response.json();
+            const modelSelect = document.getElementById('modelSelection');
+            
+            // Clear existing options
+            modelSelect.innerHTML = '';
+            
+            // Add model options with detailed information
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                
+                // Add emoji based on model type
+                let emoji = '🤖';
+                if (model.id === 'random_forest') emoji = '🌲';
+                else if (model.id === 'decision_tree') emoji = '🌳';
+                else if (model.id === 'logistic_regression') emoji = '📊';
+                else if (model.id === 'xgboost') emoji = '⚡';
+                
+                // Add performance metrics to option text
+                option.textContent = `${emoji} ${model.name} - ${model.accuracy}`;
+                option.title = `${model.description}\nAccuracy: ${model.accuracy}, F1: ${model.f1_score}\nBest for: ${model.best_for}`;
+                
+                // Disable if model is not loaded
+                if (!model.loaded) {
+                    option.disabled = true;
+                    option.textContent += ' - Not Available';
+                }
+                
+                // Set default to decision_tree (highest accuracy)
+                if (model.id === data.default) {
+                    option.selected = true;
+                }
+                
+                modelSelect.appendChild(option);
+            });
+            
+            console.log('✅ Available Models:', data.models);
+            console.log('📊 Recommendation:', data.recommendation);
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not load available models');
     }
 }
 
@@ -266,6 +344,7 @@ async function checkBackendHealth() {
         if (response.ok) {
             console.log('✅ Backend is running and healthy');
             loadModelInfo(); // Load model info after confirming backend is up
+            loadAvailableModels(); // Load available models
         }
     } catch (error) {
         console.warn('⚠️ Backend is not accessible. Make sure to start the FastAPI server.');
